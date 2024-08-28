@@ -239,23 +239,29 @@ jQuery(document).ready(function ($) {
 
         function inertiaMove(e) {
             let currentX = e.originalEvent.touches[0].pageX;
-            let deltaX = (currentX - lastX) * 2; // Увеличиваем коэффициент для большего расстояния
+            let deltaX = (currentX - lastX) * 10; // Увеличиваем коэффициент для большего расстояния
             lastX = currentX;
 
             let currentLeft = $sliderContent.position().left;
             let newLeft = currentLeft + deltaX;
+
+            // Ограничение движения $sliderContent в пределах контейнера
+            let maxLeft = 0; // Левая граница
+            let minLeft = containerWidth - contentWidth; // Правая граница
+            newLeft = Math.max(minLeft, Math.min(maxLeft, newLeft)); // Ограничение по границам
 
             // Обновляем позицию содержимого
             $sliderContent.css({ left: newLeft + 'px' });
 
             // Обновляем позицию ползунка
             let handlePosition = -newLeft / (contentWidth - containerWidth) * sliderMax;
+            handlePosition = Math.max(0, Math.min(sliderMax, handlePosition)); // Ограничение по границам ползунка
             $sliderHandle.css({ left: handlePosition + 'px' });
 
             inertiaTimeout = setTimeout(() => {
                 $sliderContent.css('transition', 'left 0.5s ease-out');
                 $sliderHandle.css('transition', 'left 0.5s ease-out');
-            }, 100);
+            }, 50);
         }
 
         function inertiaEnd() {
@@ -266,8 +272,7 @@ jQuery(document).ready(function ($) {
         $(document).on('touchend.sliderContentInertia', inertiaEnd);
     }
 
-    $sliderContent.on('touchstart', applyInertia);
-
+    $videoBlock.on('touchstart', applyInertia);
 
 
 });
