@@ -214,7 +214,7 @@ jQuery(document).ready(function ($) {
 
         function inertiaMove(e) {
             let currentX = e.originalEvent.touches[0].pageX;
-            let deltaX = (currentX - lastX) * 20;
+            let deltaX = (currentX - lastX) * 50;
             lastX = currentX;
 
             let currentLeft = $sliderContent.position().left;
