@@ -14,7 +14,7 @@ jQuery(document).ready(function ($) {
     let sliderMax = $sliderBar.width() - $sliderHandle.width();
     let viewportWidth = $viewPort.width();
     let heightDifference = 0;
-
+    let isInertiaActive = false;
 
     $scrollBlock.css("height", contentHeight);
 
@@ -36,8 +36,7 @@ jQuery(document).ready(function ($) {
             $(childrenText).css("width", containerWidth);
             $(childrenVideo).css("width", currentVideoWidth);
             videoCount += 1;
-        })
-
+        });
 
         let videoElementWidth = $videoElement.width();
 
@@ -49,11 +48,9 @@ jQuery(document).ready(function ($) {
             newSliderContentWidth += videoElementWidth * videoCount + 50 * (videoCount - 1);
         }
 
-
         contentWidth = newSliderContentWidth;
         $sliderContent.css("max-width", newSliderContentWidth);
     }
-
 
     if (viewportWidth < 1279) {
         adaptiveFunc();
@@ -66,8 +63,8 @@ jQuery(document).ready(function ($) {
 
     function startDrag(startX) {
         let startLeft = $sliderHandle.position().left;
+        isInertiaActive = false;
 
-        // Отключаем плавный скролл при перетаскивании ползунка
         $sliderContent.css('transition', 'none');
         $sliderHandle.css('transition', 'none');
 
@@ -76,20 +73,25 @@ jQuery(document).ready(function ($) {
             let newLeft = startLeft + (currentX - startX);
             newLeft = Math.max(0, Math.min(sliderMax, newLeft));
 
-            // Перемещение ползунка
             $sliderHandle.css({left: newLeft + 'px'});
 
-            // Сдвиг содержимого
             let contentShift = -newLeft / sliderMax * (contentWidth - containerWidth);
             $sliderContent.css({left: contentShift + 'px'});
 
-            // Обновление процента прокрутки
             updateScrollPercentage(newLeft);
         }
 
-        function endDrag() {
+        function endDrag(e) {
             $(document).off('.slider');
-            // Включаем плавный скролл после окончания перетаскивания
+            let endX = e.type === 'mouseup' ? e.pageX : e.originalEvent.changedTouches[0].pageX;
+            let swipeDistance = endX - startX;
+
+            if (Math.abs(swipeDistance) > 50) {
+                let swipeSpeed = swipeDistance / (e.timeStamp - e.originalEvent.timeStamp);
+                let momentum = swipeSpeed * 500; // чем больше это число, тем сильнее инерция
+                applyInertia(momentum);
+            }
+
             $sliderContent.css('transition', '');
             $sliderHandle.css('transition', '');
         }
@@ -98,73 +100,105 @@ jQuery(document).ready(function ($) {
         $(document).on('mouseup.slider touchend.slider', endDrag);
     }
 
-    // Обработка перетаскивания ползунка мышью
+    function applyInertia(momentum) {
+        if (isInertiaActive) return;
+
+        let currentLeft = $sliderHandle.position().left;
+        let targetLeft = currentLeft + momentum;
+        targetLeft = Math.max(0, Math.min(sliderMax, targetLeft));
+
+        function inertiaScroll() {
+            if (isInertiaActive) {
+                return;
+            }
+
+            currentLeft += momentum * 0.1;
+            momentum *= 0.95; // коэффициент затухания инерции
+
+            if (Math.abs(momentum) < 0.5) {
+                momentum = 0;
+                isInertiaActive = false;
+                return;
+            }
+
+            currentLeft = Math.max(0, Math.min(sliderMax, currentLeft));
+
+            $sliderHandle.css({left: currentLeft + 'px'});
+            let contentShift = -currentLeft / sliderMax * (contentWidth - containerWidth);
+            $sliderContent.css({left: contentShift + 'px'});
+
+            updateScrollPercentage(currentLeft);
+
+            requestAnimationFrame(inertiaScroll);
+        }
+
+        isInertiaActive = true;
+        requestAnimationFrame(inertiaScroll);
+    }
+
     $sliderHandle.on('mousedown', function (e) {
         startDrag(e.pageX);
         e.preventDefault();
     });
 
-    // Обработка перетаскивания ползунка пальцем
     $sliderHandle.on('touchstart', function (e) {
         startDrag(e.originalEvent.touches[0].pageX);
         e.preventDefault();
     });
 
-    // Обработка прокрутки колесика мыши
     $sliderBar.on('mousewheel DOMMouseScroll', function (e) {
         e.preventDefault();
         let delta = e.originalEvent.wheelDelta || -e.originalEvent.detail;
         let handlePosition = $sliderHandle.position().left;
 
-        // Включаем плавный скролл при прокрутке колесиком
         $sliderContent.css('transition', 'left .7s ease');
         $sliderHandle.css('transition', 'left .7s ease');
 
-        // Изменение позиции ползунка в зависимости от прокрутки
         if (delta > 0) {
-            handlePosition -= 200; // скорость прокрутки вверх
+            handlePosition -= 200;
         } else {
-            handlePosition += 200; // скорость прокрутки вниз
+            handlePosition += 200;
         }
 
         handlePosition = Math.max(0, Math.min(sliderMax, handlePosition));
 
-        // Перемещение ползунка
         $sliderHandle.css({left: handlePosition + 'px'});
 
-        // Сдвиг содержимого
         let contentShift = -handlePosition / sliderMax * (contentWidth - containerWidth);
         $sliderContent.css({left: contentShift + 'px'});
 
-        // Обновление процента прокрутки
         updateScrollPercentage(handlePosition);
     });
 
-    // Обработка касания и перетягивания контента на мобильных устройствах
     $videoBlock.on('touchstart', function (e) {
         let startX = e.originalEvent.touches[0].pageX;
         let startLeft = $sliderContent.position().left;
+        let startTime = e.timeStamp;
 
         function moveContent(e) {
             let currentX = e.originalEvent.touches[0].pageX;
             let newLeft = startLeft + (currentX - startX);
 
-            // Ограничение движения влево и вправо
             newLeft = Math.max(containerWidth - contentWidth, Math.min(0, newLeft));
 
-            // Сдвиг содержимого
             $sliderContent.css({left: newLeft + 'px'});
 
-            // Обновление положения ползунка
             let handlePosition = -newLeft / (contentWidth - containerWidth) * sliderMax;
             $sliderHandle.css({left: handlePosition + 'px'});
 
-            // Обновление процента прокрутки
             updateScrollPercentage(handlePosition);
         }
 
-        function endContentDrag() {
+        function endContentDrag(e) {
             $(document).off('touchmove.sliderContent touchend.sliderContent');
+            let endX = e.originalEvent.changedTouches[0].pageX;
+            let swipeDistance = endX - startX;
+            let swipeSpeed = swipeDistance / (e.timeStamp - startTime);
+
+            if (Math.abs(swipeDistance) > 50) {
+                let momentum = swipeSpeed * 500;
+                applyInertia(momentum);
+            }
         }
 
         $(document).on('touchmove.sliderContent', moveContent);
@@ -194,36 +228,28 @@ jQuery(document).ready(function ($) {
                 const initialScrollBlockHeight = $scrollBlock.height();
                 let initialSliderContentHeight = $sliderContent.height();
 
-
                 if ($videoItemText.hasClass('expanded')) {
-                    // Если текст уже раскрыт, сворачиваем его обратно
                     $videoItemText.removeClass('expanded').text(displayedText);
                     $(this).text('mehr');
 
-                    // Вычисляем новую высоту scroll-block
-                    // const heightDifference = initialScrollBlockHeight - initialSliderContentHeight; // Разница высоты
                     let updateSliderContentHeight = $sliderContent.height();
                     heightDifference = initialSliderContentHeight - updateSliderContentHeight;
                     $scrollBlock.css('height', initialScrollBlockHeight - heightDifference + 'px');
                 } else {
-                    // Раскрываем текст
                     $videoItemText.addClass('expanded').text(truncatedText);
                     $(this).text('weniger');
                     let updateSliderContentHeight = $sliderContent.height();
 
-
-                    // Вычисляем новую высоту scroll-block
-                    heightDifference = updateSliderContentHeight - initialSliderContentHeight; // Разница высоты
+                    heightDifference = updateSliderContentHeight - initialSliderContentHeight;
 
                     const newScrollBlockHeight = initialScrollBlockHeight + heightDifference;
                     $scrollBlock.css('height', newScrollBlockHeight + 'px');
                 }
             }
 
-            // Поддержка как для клика, так и для тач-событий
             $(this).find('.video-item-review-bottom_btn').on('click touchstart', function (e) {
                 toggleReviewText.call(this);
-                e.preventDefault(); // Предотвращаем стандартное поведение, чтобы избежать конфликтов
+                e.preventDefault();
             });
         } else {
             $(this).find('.video-item-review-bottom_btn').hide();
