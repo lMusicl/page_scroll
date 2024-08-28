@@ -2,7 +2,6 @@ jQuery(document).ready(function ($) {
     let $sliderBar = $('.slider-bar');
     let $sliderHandle = $('.slider-handle');
     let $sliderContent = $('.slider-content');
-    let $scrollPercentage = $('.scroll-percentage');
     let $videoElement = $('.video-item');
     let $videoBlock = $('.video-block');
     let $viewPort = $('body');
@@ -55,15 +54,62 @@ jQuery(document).ready(function ($) {
         adaptiveFunc();
     }
 
-    function updateScrollPercentage(handlePosition) {
-        let percentage = Math.round((handlePosition / sliderMax) * 100);
-        $scrollPercentage.text('[ ' + percentage + '% ]');
+    function getQueryParam(param) {
+        let urlParams = new URLSearchParams(window.location.search);
+        return urlParams.get(param);
     }
+
+    // Получаем значение параметра id
+    let id = getQueryParam('id');
+    let itemsGap = 0;
+
+    if (viewportWidth > 1280) {
+        itemsGap = 240;
+    } else if (viewportWidth >= 1024 && viewportWidth <= 1279) {
+        itemsGap = 150;
+    } else if (viewportWidth >= 960 && viewportWidth <= 1023) {
+        itemsGap = 100;
+    } else if (viewportWidth > 1 && viewportWidth <= 959) {
+        itemsGap = 50;
+    }
+
+    // Выполняем действия в зависимости от значения id
+    let currentVideoPosition = $videoElement.width() + itemsGap;
+    let initialSliderContentLeft = 0;
+
+    if (id) {
+        switch (id) {
+            case '1':
+                initialSliderContentLeft = 0;
+                break;
+            case '2':
+                initialSliderContentLeft = -currentVideoPosition;
+                break;
+            case '3':
+                initialSliderContentLeft = -currentVideoPosition * 2;
+                break;
+            case '4':
+                initialSliderContentLeft = -currentVideoPosition * 3;
+                break;
+            default:
+                console.log("ID не соответствует ни одному из ожидаемых значений");
+                break;
+        }
+    } else {
+        console.log("ID параметр не найден в URL");
+    }
+
+    // Устанавливаем начальную позицию для $sliderContent
+    $sliderContent.css('left', initialSliderContentLeft + 'px');
+
+    // Вычисляем и устанавливаем соответствующую позицию для $sliderHandle
+    let initialHandlePosition = Math.abs(initialSliderContentLeft) / (contentWidth - containerWidth) * sliderMax;
+    initialHandlePosition = Math.max(0, Math.min(sliderMax, initialHandlePosition));
+    $sliderHandle.css('left', initialHandlePosition + 'px');
 
     function startDrag(startX) {
         let startLeft = $sliderHandle.position().left;
 
-        // Отключаем плавный скролл при перетаскивании ползунка
         $sliderContent.css('transition', 'none');
         $sliderHandle.css('transition', 'none');
 
@@ -72,20 +118,14 @@ jQuery(document).ready(function ($) {
             let newLeft = startLeft + (currentX - startX);
             newLeft = Math.max(0, Math.min(sliderMax, newLeft));
 
-            // Перемещение ползунка
             $sliderHandle.css({left: newLeft + 'px'});
 
-            // Сдвиг содержимого
             let contentShift = -newLeft / sliderMax * (contentWidth - containerWidth);
             $sliderContent.css({left: contentShift + 'px'});
-
-            // Обновление процента прокрутки
-            updateScrollPercentage(newLeft);
         }
 
         function endDrag() {
             $(document).off('.slider');
-            // Включаем плавный скролл после окончания перетаскивания
             $sliderContent.css('transition', '');
             $sliderHandle.css('transition', '');
         }
@@ -124,8 +164,6 @@ jQuery(document).ready(function ($) {
 
         let contentShift = -handlePosition / sliderMax * (contentWidth - containerWidth);
         $sliderContent.css({left: contentShift + 'px'});
-
-        updateScrollPercentage(handlePosition);
     });
 
     $videoBlock.on('touchstart', function (e) {
@@ -142,8 +180,6 @@ jQuery(document).ready(function ($) {
 
             let handlePosition = -newLeft / (contentWidth - containerWidth) * sliderMax;
             $sliderHandle.css({left: handlePosition + 'px'});
-
-            updateScrollPercentage(handlePosition);
         }
 
         function endContentDrag() {
@@ -254,5 +290,6 @@ jQuery(document).ready(function ($) {
     }
 
     $videoBlock.on('touchstart', applyInertia);
+
 
 });
