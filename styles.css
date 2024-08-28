@@ -103,17 +103,17 @@ body {
     transition: all .2s linear;
 }
 
-.scroll-percentage {
-    position: absolute;
-    top: 0;
-    right: 0;
-    font-family: "SplineSansMono", sans-serif;
-    font-weight: 400;
-    font-size: 20px;
-    line-height: 120%;
-    text-transform: uppercase;
-    color: #fff;
-}
+/*.scroll-percentage {*/
+/*    position: absolute;*/
+/*    top: 0;*/
+/*    right: 0;*/
+/*    font-family: "SplineSansMono", sans-serif;*/
+/*    font-weight: 400;*/
+/*    font-size: 20px;*/
+/*    line-height: 120%;*/
+/*    text-transform: uppercase;*/
+/*    color: #fff;*/
+/*}*/
 
 .video-item {
     max-width: 1200px;
@@ -397,9 +397,9 @@ body {
         font-size: 14px;
     }
 
-    .scroll-percentage {
-        font-size: 14px;
-    }
+    /*.scroll-percentage {*/
+    /*    font-size: 14px;*/
+    /*}*/
 
     .slider-handle {
         font-size: 14px;
@@ -450,8 +450,4 @@ body {
     .video-block {
         margin-bottom: 100px;
     }
-}
-
-@media screen and (max-width: 374px) {
-
 }
