@@ -206,34 +206,42 @@ jQuery(document).ready(function ($) {
     });
 
     let inertiaTimeout;
+    let isQuickSwipe = false;
+    let touchStartTime;
 
     function applyInertia(e) {
         clearTimeout(inertiaTimeout);
         let startX = e.originalEvent.touches[0].pageX;
         let lastX = startX;
+        touchStartTime = Date.now();
 
         function inertiaMove(e) {
             let currentX = e.originalEvent.touches[0].pageX;
-            let deltaX = (currentX - lastX) * 30;
+            let deltaX = currentX - lastX;
             lastX = currentX;
 
             let currentLeft = $sliderContent.position().left;
-            let newLeft = currentLeft + deltaX;
+
+            // Если движение быстрое, умножаем deltaX на 30
+            let newLeft = currentLeft + (isQuickSwipe ? deltaX * 30 : deltaX);
 
             let maxLeft = 0;
             let minLeft = containerWidth - contentWidth;
             newLeft = Math.max(minLeft, Math.min(maxLeft, newLeft));
 
+            let moveTime = Date.now() - touchStartTime;
+            isQuickSwipe = moveTime < 200; // Условие быстрого движения
+
             $sliderContent.css({
                 left: newLeft + 'px',
-                transition: 'left 0.5s ease-out'
+                transition: isQuickSwipe ? 'left 0.5s ease-out' : 'none'
             });
 
             let handlePosition = -newLeft / (contentWidth - containerWidth) * sliderMax;
             handlePosition = Math.max(0, Math.min(sliderMax, handlePosition));
             $sliderHandle.css({
                 left: handlePosition + 'px',
-                transition: 'left 0.5s ease-out'
+                transition: isQuickSwipe ? 'left 0.5s ease-out' : 'none'
             });
         }
 
@@ -246,4 +254,5 @@ jQuery(document).ready(function ($) {
     }
 
     $videoBlock.on('touchstart', applyInertia);
+
 });
